@@ -1,30 +1,246 @@
----
-title: "Cycle Data Report"
-author: "Ajay Rahul"
-date: "22/08/2021"
-output: word_document
----
+# important packages needed
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+library(tidyverse) 
+library(lubridate)  
+library(ggplot2)
+# Reading the data as the following individual rows.
 
-## R Markdown
+may_2020  
+jun_2020  
+jul_2020  
+aug_2020  
+sep_2020  
+oct_2020  
+nov_2020  
+dec_2020  
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+# noticing the structure of the files.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+str(may_2020)
+str(jun_2020)
+str(jul_2020)
+str(aug_2020)
+str(sep_2020)
+str(oct_2020)
+str(nov_2020)
+str(dec_2020)
 
-```{r cars}
-summary(cars)
-```
+# Remove all latitude and longitude
 
-## Including Plots
+all_trips <- all_trips %>% 
+  select(-c(start_lat, start_lng, end_lat, end_lng))
+Then, converting start_station_id and end_station_id into character to analyze further.
 
-You can also embed plots, for example:
+# once the different dataset have the same number of columns and cleaned, they are merged together to get an aggredated dataset to use them in the analyze part.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
+all_trips <- bind_rows(may_2020, jun_2020, jul_2020, aug_2020, sep_2020, 
+                       oct_2020, nov_2020, dec_2020)
+                       
+# To seperate the date, month and year from a single format.
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+all_trips$date <- as.Date(all_trips$started_at) # the default format is yyyy-mm-dd
+all_trips$month <- format(as.Date(all_trips$date), "%B")
+all_trips$day <- format(as.Date(all_trips$date), "%d")
+all_trips$year <- format(as.Date(all_trips$date), "%Y")
+all_trips$day_of_week <- format(as.Date(all_trips$date), "%a")
+
+all_trips$ride_length <- difftime(all_trips$ended_at, all_trips$started_at, units = "mins")all_trips
+
+# to check if the ride length is numeric or not, that will be used later in the visualzition part. It is necessary. 
+
+is.factor(all_trips$ride_length)
+all_trips$ride_length <- as.numeric(as.character(all_trips$ride_length))
+is.numeric(all_trips$ride_length)
+
+# Make a copy for the cleaned data frame
+
+all_trips_v2 <- all_trips[!(all_trips$ride_length > 1440 | all_trips$ride_length <= 0),]
+str(all_trips_v2) 
+
+# differentiating between the member/casual riders and corresponding to their station name
+
+all_stations <- bind_rows(data.frame("stations" = all_trips_v2$start_station_name, 
+                                     "member_casual" = all_trips_v2$member_casual),
+                          data.frame("stations" = all_trips_v2$end_station_name,
+                                     "member_casual" = all_trips_v2$member_casual))
+
+all_stations_v2 <- all_stations[!(all_stations$stations == "" | is.na(all_stations$stations)),]
+all_stations_member <- all_stations_v2[all_stations_v2$member_casual == 'member',]
+all_stations_casual <- all_stations_v2[all_stations_v2$member_casual == 'casual',]
+ 
+# Get the top 10 popular stations all, members, and casual riders
+
+top_10_station <- all_stations_v2 %>% 
+  group_by(stations) %>% 
+  summarise(station_count = n()) %>% 
+  arrange(desc(station_count)) %>% 
+  slice(1:10)
+
+top_10_station_member <- all_stations_member %>% 
+  group_by(stations) %>% 
+  summarise(station_count = n()) %>% 
+  arrange(desc(station_count)) %>% 
+  head(n=10)
+
+top_10_station_casual <- all_stations_casual %>% 
+  group_by(stations) %>% 
+  summarise(station_count = n()) %>% 
+  arrange(desc(station_count)) %>% 
+  head(n=10)
+# Top 20 start stations for casual riders
+
+all_trips_v2 %>% 
+  group_by(start_station_name, member_casual) %>% 
+  summarize(number_of_rides = n(), .groups = 'drop') %>% 
+  filter(start_station_name != "", member_casual != "member") %>% 
+  arrange(-number_of_rides) %>% 
+  head(n=20)
+  
+# To view the week in order
+
+all_trips_v2$day_of_week <- ordered(all_trips_v2$day_of_week, 
+                                    levels = c("Mon", 
+                                               "Tue", "Wed",
+                                               "Thu", "Fri", "Sat", "Sun"))
+# Number of rides between members and casual riders for each day of week
+
+all_trips_v2 %>% 
+  group_by(member_casual, day_of_week) %>% 
+  summarise(number_of_rides = n(), .groups = 'drop') %>% 
+  arrange(day_of_week)
+  
+# Put months in order
+
+all_trips_v2$month <- ordered(all_trips_v2$month, 
+                              levels = c("January", "February", "March",
+                                         "April", "May", "June",
+                                         "July", "August", "September",
+                                         "Octobor", "November", "December"))
+
+# See the average ride length by month for members vs. casual riders
+
+aggregate(all_trips_v2$ride_length ~ all_trips_v2$member_casual + all_trips_v2$month, FUN = mean)
+
+# Comparing general bike type preference between members and casual riders
+
+all_trips_v2 %>% 
+  group_by(rideable_type, member_casual) %>% 
+  summarize(number_of_rides = n(), .groups = 'drop')
+  
+# Comparing number of docked_bike rides between members and casual riders for each day of week
+
+all_trips_v2 %>% 
+  filter(rideable_type == 'docked_bike') %>% 
+  group_by(member_casual, day_of_week) %>% 
+  summarise(number_of_rides = n(), .groups = 'drop') %>% 
+  arrange(day_of_week)
+ 
+# To begin with the comparison between casual and member rides, the following bar graph shows the average number of riders between the casual and member riders for a week range.
+
+# to find average number of riders by day, for both the riders 
+
+all_trips_v2 %>% 
+  group_by(member_casual, week_day) %>% 
+  summarise(average_duration = mean(ride_length), .groups = 'drop') %>% 
+  arrange(member_casual, week_day) %>% 
+  ggplot(aes(x = week_day, y = average_duration, fill = member_casual)) +
+  geom_col(position = "dodge") +
+  labs(x = "Day of Week", y = "Average Duration (min)", fill = "Member/Casual",
+       title = "Average Riding Duration by Day: Members vs. Casual 
+       
+       ![Average Number of Rides by Day Members vs  Casual Riders](https://user-images.githubusercontent.com/31838370/137300199-6af7ef83-7fce-4bcb-a5db-c67105120407.jpeg)
+Riders")
+
+# filtering out member, finding average number of rides per hour
+
+all_trips_v2 %>%
+  filter(member_casual == 'casual') %>%
+  group_by(hour_od = hour(round_date(started_at_hour, 'hour'))) %>% 
+  group_by(hour_od , member_casual) %>% 
+  summarize(number_of_rides = n(), .groups = 'drop') %>% 
+  arrange(-number_of_rides) %>% 
+  ggplot(aes(x = hour_od , y = number_of_rides, fill = member_casual)) +
+  geom_bar(position = 'dodge', stat = 'identity') + scale_y_continuous(labels = scales::comma) +
+  scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23)) +
+  labs(x = "Time of the Day (h)", y = "Number of Rides", 
+       fill = "Member/Casual",
+       title = "Average Number of Rides by Hour: Casual Riders")
+
+# filtering out casual, finding average number of rides per hour
+
+all_trips_v2 %>%
+  filter(member_casual == 'member') %>%
+  group_by(hour_od = hour(round_date(started_at_hour, 'hour'))) %>% 
+  group_by(hour_od , member_casual) %>% 
+  summarize(number_of_rides = n(), .groups = 'drop') %>% 
+  arrange(-number_of_rides) %>% 
+  ggplot(aes(x = hour_od , y = number_of_rides, fill = member_casual)) +
+  geom_bar(position = 'dodge', stat = 'identity') + scale_y_continuous(labels = scales::comma) +
+  scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23)) +
+  labs(x = "Time of the Day (h)", y = "Number of Rides", 
+       fill = "Member/Casual",
+       title = "Average Number of Rides by Hour: Casual Riders")
+ 
+# to find number of rides by month for casual member
+
+all_trips_v2 %>% 
+  group_by(month, member_casual) %>% 
+  summarize(number_of_rides = n(), .groups = 'drop') %>% 
+  filter(member_casual == 'casual') %>%
+  drop_na() %>%
+  ggplot(aes(x = month, y = number_of_rides, fill = member_casual)) + 
+  geom_bar(position = 'dodge', stat = 'identity') + scale_y_continuous(labels = scales::comma) +
+  theme(axis.text.x = element_text(angle = 45)) + 
+  labs(x = "Month", y = "Number of Rides", 
+       fill = "Member/Casual",
+       title = "Average Number of Rides by Month: Casual Riders")
+
+
+# to find out average duration betweeen casual riders and member riders
+
+all_trips_v2 %>% 
+  group_by(member_casual) %>% 
+  summarize(average_duration = mean(ride_length)) %>% 
+  ggplot(aes(x = member_casual, y = average_duration, fill=member_casual)) +
+  geom_col(position = "dodge") +
+  labs(x = "Rider Type", y = "Average Duration (min)", 
+       title = "Average Riding Duration by Rider Type")
+
+
+# using facet_grid to differnetiate different months and between casual and member riders
+
+all_trips_v2 %>% 
+  group_by(month, week_day, member_casual) %>% 
+  summarize(number_of_rides = n(), .groups = 'drop') %>% 
+  drop_na() %>% 
+  ggplot(aes(x = week_day, y = number_of_rides, fill = member_casual)) +
+  geom_col(position = "dodge") +
+  scale_y_continuous(labels = scales::comma) +
+  facet_grid(member_casual~month) +
+  labs(x = "Day of Week", y = "Number of Rides", fill = "Member/Casual",
+       title = "Bike Usage between Members and Casual Riders by Day of Week across the Year", fill = 'Member/Casual') +
+  theme(axis.text.x = element_text(angle = 90))
+
+# The December month seems lower in both the riders, considering the other month we can see the constant high number of rides by casual rides in weekdays.
+
+ggplot(data = top_10_station_casual) +
+  geom_col(aes(x = reorder(stations, station_count), y = station_count), fill = "red") +
+  labs(title = "Top 10 Used Stations by Members", y = "Number of Rides", x = "") +
+  scale_y_continuous(labels = scales::comma) +
+  coord_flip() +
+  theme_minimal()
+
+
+
+ggplot(data = top_10_station_member) +
+  geom_col(aes(x = reorder(stations, station_count), y = station_count), fill = "thistle") +
+  labs(title = "Top 10 Used Stations by Members", y = "Number of Rides", x = "") +
+  scale_y_continuous(labels = scales::comma) +
+  coord_flip() +
+  theme_minimal()
+
+
+
+# The above two graph shows which station has most rides from both the riders. 
+ 
+
