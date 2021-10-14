@@ -239,7 +239,7 @@ ggplot(data = top_10_station_member) +
   coord_flip() +
   theme_minimal()
 
-![Average Number of Rides by Day Members vs  Casual Riders](https://user-images.githubusercontent.com/31838370/137300651-abe653ee-1438-4add-ba05-4dba663d573a.jpeg)
+![Average Number of Rides by Day Members vs  Casual Riders](https://user-images.githubusercontent.com/31838370/137300651-abe653ee-1438-4add-ba05-4dba663d573a.jpeg?raw=true)
 
 ![Average Number of Rides by Hour MemberRiders](https://user-images.githubusercontent.com/31838370/137300731-ccbbfd54-e9f4-4f6c-b25e-292e4ca339c6.jpeg)
 
