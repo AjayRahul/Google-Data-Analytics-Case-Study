@@ -239,6 +239,22 @@ ggplot(data = top_10_station_member) +
   coord_flip() +
   theme_minimal()
 
+![Average Number of Rides by Day Members vs  Casual Riders](https://user-images.githubusercontent.com/31838370/137300651-abe653ee-1438-4add-ba05-4dba663d573a.jpeg)
+
+![Average Number of Rides by Hour MemberRiders](https://user-images.githubusercontent.com/31838370/137300731-ccbbfd54-e9f4-4f6c-b25e-292e4ca339c6.jpeg)
+
+![Average Number of Rides by Hour Casual Riders](https://user-images.githubusercontent.com/31838370/137300758-9d1183ce-47b7-4cfc-a834-004e33acf5e0.jpeg)
+
+
+![Average Number of Rides by Month Casual Riders](https://user-images.githubusercontent.com/31838370/137300770-2546d743-736d-40f6-938a-a83f2e58a643.jpeg)
+
+![Average Riding Duration by Rider Type](https://user-images.githubusercontent.com/31838370/137300788-55bb326e-90ef-4eaa-982d-769087cb7e81.jpeg)
+
+![Bike Usage between Members and Casual Riders by Day of Week](https://user-images.githubusercontent.com/31838370/137300807-0b257e20-01f5-4a79-ad7e-0e5934fed0b4.jpeg)
+
+![Top 10 Used Stations by Members](https://user-images.githubusercontent.com/31838370/137300824-3932d717-9fc2-49cd-b774-ec35a65e6d4d.jpeg)
+
+![Top 10 Used Stations by Members](https://user-images.githubusercontent.com/31838370/137300873-da63e3a5-842b-4599-9717-cd1213333237.jpeg)
 
 
 # The above two graph shows which station has most rides from both the riders. 
